@@ -1,11 +1,29 @@
 "use strict";
 
 /* =========================================
-   CONFIGURACIÓN DE LA API
+   CONFIGURACIÓN DE APIs
    ========================================= */
 
-const UMA_API_URL =
-    "https://hubfiscal.mx/api/v1/public/uma";
+const API = {
+    uma: "https://hubfiscal.mx/api/v1/public/uma",
+    fxHistory:
+        "https://hubfiscal.mx/api/v1/public/fx/history?days=7",
+    inpc:
+        "https://hubfiscal.mx/api/v1/public/inpc?limit=1",
+    fiscalCalendar:
+        "https://hubfiscal.mx/api/v1/public/calendario/proximos"
+};
+
+
+/* =========================================
+   CONFIGURACIÓN — WEB3FORMS
+   ========================================= */
+
+const WEB3FORMS = {
+    endpoint: "https://api.web3forms.com/submit",
+    accessKey: "f9e85f92-fb41-4cbe-8f33-cf71058f3fc8",
+    subject: "Nueva solicitud de diagnóstico — FINANZA"
+};
 
 
 /* =========================================
@@ -58,37 +76,45 @@ const orientationResultDescription =
 
 
 function updateOrientation(profile) {
+    const selected =
+        orientationData[profile];
 
-    const selected = orientationData[profile];
-
-    if (!selected || !orientationResult) {
+    if (
+        !selected ||
+        !orientationResult
+    ) {
         return;
     }
 
     orientationOptions.forEach((option) => {
-
-        const active =
+        const isActive =
             option.dataset.profile === profile;
 
         option.classList.toggle(
             "is-selected",
-            active
+            isActive
         );
 
         option.setAttribute(
             "aria-pressed",
-            String(active)
+            String(isActive)
         );
     });
 
-    orientationResultCategory.textContent =
-        selected.category;
+    if (orientationResultCategory) {
+        orientationResultCategory.textContent =
+            selected.category;
+    }
 
-    orientationResultTitle.textContent =
-        selected.title;
+    if (orientationResultTitle) {
+        orientationResultTitle.textContent =
+            selected.title;
+    }
 
-    orientationResultDescription.textContent =
-        selected.description;
+    if (orientationResultDescription) {
+        orientationResultDescription.textContent =
+            selected.description;
+    }
 
     if (orientationResultAction) {
         orientationResultAction.dataset.profile =
@@ -110,13 +136,14 @@ function updateOrientation(profile) {
 
 
 orientationOptions.forEach((option) => {
-
-    option.addEventListener("click", () => {
-        updateOrientation(
-            option.dataset.profile
-        );
-    });
-
+    option.addEventListener(
+        "click",
+        () => {
+            updateOrientation(
+                option.dataset.profile
+            );
+        }
+    );
 });
 
 
@@ -138,13 +165,10 @@ if (
     !prefersReducedMotion &&
     "IntersectionObserver" in window
 ) {
-
     const revealObserver =
         new IntersectionObserver(
             (entries, observer) => {
-
                 entries.forEach((entry) => {
-
                     if (!entry.isIntersecting) {
                         return;
                     }
@@ -157,11 +181,11 @@ if (
                         entry.target
                     );
                 });
-
             },
             {
                 threshold: 0.15,
-                rootMargin: "0px 0px -40px 0px"
+                rootMargin:
+                    "0px 0px -40px 0px"
             }
         );
 
@@ -172,7 +196,9 @@ if (
 } else {
 
     revealElements.forEach((element) => {
-        element.classList.add("is-visible");
+        element.classList.add(
+            "is-visible"
+        );
     });
 
 }
@@ -189,14 +215,14 @@ const navbarScrollThreshold = 20;
 
 
 function updateNavbar() {
-
     if (!mainNavbar) {
         return;
     }
 
     mainNavbar.classList.toggle(
         "is-scrolled",
-        window.scrollY > navbarScrollThreshold
+        window.scrollY >
+            navbarScrollThreshold
     );
 }
 
@@ -204,14 +230,17 @@ function updateNavbar() {
 window.addEventListener(
     "scroll",
     updateNavbar,
-    { passive: true }
+    {
+        passive: true
+    }
 );
 
 updateNavbar();
 
 
 /* =========================================
-   VALIDACIÓN DEL FORMULARIO
+   FORMULARIO DE CONTACTO
+   WEB3FORMS
    ========================================= */
 
 const contactForm =
@@ -221,11 +250,11 @@ const formSuccess =
     document.querySelector("#formSuccess");
 
 
-if (contactForm && formSuccess) {
+if (contactForm) {
 
     contactForm.addEventListener(
         "submit",
-        (event) => {
+        async (event) => {
 
             event.preventDefault();
 
@@ -233,27 +262,157 @@ if (contactForm && formSuccess) {
                 "was-validated"
             );
 
+            /* ==============================
+               VALIDACIÓN
+               ============================== */
+
             if (!contactForm.checkValidity()) {
                 return;
             }
+
+
+            /* ==============================
+               BOTÓN DE ENVÍO
+               ============================== */
 
             const submitButton =
                 contactForm.querySelector(
                     'button[type="submit"]'
                 );
 
+            const originalButtonText =
+                submitButton
+                    ? submitButton.textContent.trim()
+                    : "Solicitar diagnóstico";
+
+
             if (submitButton) {
 
                 submitButton.disabled = true;
 
                 submitButton.textContent =
-                    "Solicitud preparada";
+                    "Enviando solicitud...";
             }
 
-            contactForm.hidden = true;
-            formSuccess.hidden = false;
 
-            formSuccess.focus();
+            /* ==============================
+               ENVÍO A WEB3FORMS
+               ============================== */
+
+            try {
+
+                const formData =
+                    new FormData(contactForm);
+
+
+                formData.set(
+                    "access_key",
+                    WEB3FORMS.accessKey
+                );
+
+
+                formData.set(
+                    "subject",
+                    WEB3FORMS.subject
+                );
+
+
+                formData.set(
+                    "from_name",
+                    "FINANZA"
+                );
+
+
+                const response =
+                    await fetch(
+                        WEB3FORMS.endpoint,
+                        {
+                            method: "POST",
+                            body: formData,
+                            headers: {
+                                Accept:
+                                    "application/json"
+                            }
+                        }
+                    );
+
+
+                let result = null;
+
+
+                try {
+
+                    result =
+                        await response.json();
+
+                } catch (jsonError) {
+
+                    console.error(
+                        "No fue posible interpretar la respuesta de Web3Forms:",
+                        jsonError
+                    );
+
+                }
+
+
+                if (
+                    !response.ok ||
+                    !result ||
+                    result.success !== true
+                ) {
+
+                    throw new Error(
+                        result?.message ||
+                        `Error HTTP: ${response.status}`
+                    );
+                }
+
+
+                /* ==============================
+                   ENVÍO EXITOSO
+                   ============================== */
+
+                contactForm.reset();
+
+                contactForm.classList.remove(
+                    "was-validated"
+                );
+
+
+                contactForm.hidden = true;
+
+
+                if (formSuccess) {
+
+                    formSuccess.hidden = false;
+
+                    formSuccess.focus();
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "Error al enviar el formulario de contacto:",
+                    error
+                );
+
+
+                if (submitButton) {
+
+                    submitButton.disabled =
+                        false;
+
+                    submitButton.textContent =
+                        originalButtonText;
+                }
+
+
+                alert(
+                    "No fue posible enviar tu solicitud. Por favor, inténtalo nuevamente."
+                );
+            }
+
         }
     );
 }
@@ -272,11 +431,14 @@ if (
         "click",
         () => {
 
-            const profile =
+            const selectedProfile =
                 orientationResultAction.dataset.profile;
 
-            if (profile) {
-                profileSelect.value = profile;
+
+            if (selectedProfile) {
+
+                profileSelect.value =
+                    selectedProfile;
             }
         }
     );
@@ -284,7 +446,106 @@ if (
 
 
 /* =========================================
-   API — INDICADOR UMA
+   UTILIDADES GENERALES
+   ========================================= */
+
+function formatCurrency(value) {
+
+    return new Intl.NumberFormat(
+        "es-MX",
+        {
+            style: "currency",
+            currency: "MXN",
+            minimumFractionDigits: 2
+        }
+    ).format(
+        Number(value)
+    );
+}
+
+
+function formatPercentage(value) {
+
+    return `${
+        (
+            Number(value) * 100
+        ).toFixed(2)
+    }%`;
+}
+
+
+function formatExchangeRate(value) {
+
+    return `$${Number(value).toFixed(4)}`;
+}
+
+
+function formatDate(
+    dateString,
+    options = {}
+) {
+
+    if (!dateString) {
+        return "--";
+    }
+
+
+    const date =
+        new Date(
+            `${dateString}T00:00:00`
+        );
+
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return dateString;
+    }
+
+
+    return date.toLocaleDateString(
+        "es-MX",
+        options
+    );
+}
+
+
+function setStatus(
+    element,
+    message,
+    state = ""
+) {
+
+    if (!element) {
+        return;
+    }
+
+
+    element.textContent =
+        message;
+
+
+    element.classList.remove(
+        "is-loading",
+        "is-success",
+        "is-error"
+    );
+
+
+    if (state) {
+
+        element.classList.add(
+            state
+        );
+    }
+}
+
+
+/* =========================================
+   API — UMA
    ========================================= */
 
 const umaStatus =
@@ -309,50 +570,6 @@ const umaRefresh =
     document.querySelector("#umaRefresh");
 
 
-function formatCurrency(value) {
-
-    return new Intl.NumberFormat(
-        "es-MX",
-        {
-            style: "currency",
-            currency: "MXN",
-            minimumFractionDigits: 2
-        }
-    ).format(value);
-}
-
-
-function formatPercentage(value) {
-
-    return `${(
-        Number(value) * 100
-    ).toFixed(2)}%`;
-}
-
-
-function updateUMAStatus(
-    message,
-    state = ""
-) {
-
-    if (!umaStatus) {
-        return;
-    }
-
-    umaStatus.textContent = message;
-
-    umaStatus.classList.remove(
-        "is-loading",
-        "is-success",
-        "is-error"
-    );
-
-    if (state) {
-        umaStatus.classList.add(state);
-    }
-}
-
-
 async function loadUMA() {
 
     if (
@@ -363,24 +580,34 @@ async function loadUMA() {
         !umaEmployeeRate ||
         !umaEmployerRate
     ) {
+
         return;
     }
 
-    updateUMAStatus(
+
+    setStatus(
+        umaStatus,
         "Consultando información...",
         "is-loading"
     );
 
+
     if (umaRefresh) {
+
         umaRefresh.disabled = true;
+
         umaRefresh.textContent =
             "Actualizando información...";
     }
 
+
     try {
 
         const response =
-            await fetch(UMA_API_URL);
+            await fetch(
+                API.uma
+            );
+
 
         if (!response.ok) {
 
@@ -389,34 +616,66 @@ async function loadUMA() {
             );
         }
 
+
         const data =
             await response.json();
 
+
         if (
-            typeof data.uma !== "number" ||
-            typeof data.year !== "number"
+            !data ||
+            !Number.isFinite(
+                Number(data.uma)
+            ) ||
+            !Number.isFinite(
+                Number(data.year)
+            ) ||
+            !Number.isFinite(
+                Number(data.salarioMinimo)
+            ) ||
+            !Number.isFinite(
+                Number(data.employeeRate)
+            ) ||
+            !Number.isFinite(
+                Number(data.employerRate)
+            )
         ) {
+
             throw new Error(
                 "La respuesta de la API no tiene el formato esperado."
             );
         }
 
+
         umaValue.textContent =
-            formatCurrency(data.uma);
+            formatCurrency(
+                data.uma
+            );
+
 
         umaYear.textContent =
             `Vigente para ${data.year}`;
 
+
         umaSalary.textContent =
-            formatCurrency(data.salarioMinimo);
+            formatCurrency(
+                data.salarioMinimo
+            );
+
 
         umaEmployeeRate.textContent =
-            formatPercentage(data.employeeRate);
+            formatPercentage(
+                data.employeeRate
+            );
+
 
         umaEmployerRate.textContent =
-            formatPercentage(data.employerRate);
+            formatPercentage(
+                data.employerRate
+            );
 
-        updateUMAStatus(
+
+        setStatus(
+            umaStatus,
             "Información actualizada correctamente.",
             "is-success"
         );
@@ -428,13 +687,16 @@ async function loadUMA() {
             error
         );
 
+
         umaValue.textContent = "--";
         umaYear.textContent = "--";
         umaSalary.textContent = "--";
         umaEmployeeRate.textContent = "--";
         umaEmployerRate.textContent = "--";
 
-        updateUMAStatus(
+
+        setStatus(
+            umaStatus,
             "No fue posible consultar la información.",
             "is-error"
         );
@@ -443,7 +705,8 @@ async function loadUMA() {
 
         if (umaRefresh) {
 
-            umaRefresh.disabled = false;
+            umaRefresh.disabled =
+                false;
 
             umaRefresh.textContent =
                 "Actualizar información";
@@ -463,12 +726,10 @@ if (umaRefresh) {
 
 loadUMA();
 
-/* =========================================
-   API — HISTÓRICO TIPO DE CAMBIO FIX
-   ========================================= */
 
-const FX_API_URL =
-    "https://hubfiscal.mx/api/v1/public/fx/history?days=7";
+/* =========================================
+   API — HISTÓRICO FIX
+   ========================================= */
 
 const fxStatus =
     document.querySelector("#fxStatus");
@@ -498,59 +759,6 @@ const fxRefresh =
     document.querySelector("#fxRefresh");
 
 
-function formatExchangeRate(value) {
-
-    return `$${Number(value).toFixed(4)}`;
-}
-
-
-function formatFXDate(dateString) {
-
-    if (!dateString) {
-        return "--";
-    }
-
-    const date =
-        new Date(`${dateString}T00:00:00`);
-
-    if (Number.isNaN(date.getTime())) {
-        return dateString;
-    }
-
-    return date.toLocaleDateString(
-        "es-MX",
-        {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        }
-    );
-}
-
-
-function updateFXStatus(
-    message,
-    state = ""
-) {
-
-    if (!fxStatus) {
-        return;
-    }
-
-    fxStatus.textContent = message;
-
-    fxStatus.classList.remove(
-        "is-loading",
-        "is-success",
-        "is-error"
-    );
-
-    if (state) {
-        fxStatus.classList.add(state);
-    }
-}
-
-
 function createFXBar(
     item,
     minimum,
@@ -561,33 +769,61 @@ function createFXBar(
     const bar =
         document.createElement("div");
 
+
     bar.className =
         "finanza-fx-bar";
 
+
     if (isCurrent) {
-        bar.classList.add("is-current");
+
+        bar.classList.add(
+            "is-current"
+        );
     }
+
 
     const range =
         maximum - minimum;
 
+
     const normalized =
         range === 0
             ? 60
-            : 25 + (
-                (item.rate - minimum) / range
-            ) * 55;
+            : 25 +
+              (
+                  (
+                      item.rate -
+                      minimum
+                  ) /
+                  range
+              ) *
+              55;
+
 
     bar.style.height =
         `${normalized}%`;
 
-    bar.title =
-        `${formatFXDate(item.date)}: ${formatExchangeRate(item.rate)}`;
+
+    const label =
+        `${formatDate(
+            item.date,
+            {
+                day: "2-digit",
+                month: "short"
+            }
+        )}: ${formatExchangeRate(
+            item.rate
+        )}`;
+
+
+    bar.title = label;
+
 
     bar.setAttribute(
         "aria-label",
-        `${formatFXDate(item.date)}: ${formatExchangeRate(item.rate)}`
+        label
     );
+
 
     return bar;
 }
@@ -605,15 +841,20 @@ async function loadFX() {
         !fxMax ||
         !fxChange
     ) {
+
         return;
     }
 
-    updateFXStatus(
+
+    setStatus(
+        fxStatus,
         "Consultando histórico...",
         "is-loading"
     );
 
+
     fxChart.innerHTML = "";
+
 
     if (fxRefresh) {
 
@@ -623,10 +864,14 @@ async function loadFX() {
             "Actualizando información...";
     }
 
+
     try {
 
         const response =
-            await fetch(FX_API_URL);
+            await fetch(
+                API.fxHistory
+            );
+
 
         if (!response.ok) {
 
@@ -635,59 +880,106 @@ async function loadFX() {
             );
         }
 
+
         const data =
             await response.json();
+
 
         if (
             !Array.isArray(data) ||
             !data.length
         ) {
+
             throw new Error(
                 "La API no devolvió un histórico válido."
             );
         }
 
+
         const history =
             data
                 .filter(
-                    item =>
+                    (item) =>
                         item &&
                         item.date &&
-                        typeof item.rate === "number"
+                        Number.isFinite(
+                            Number(item.rate)
+                        )
+                )
+                .map(
+                    (item) => ({
+                        ...item,
+                        rate:
+                            Number(
+                                item.rate
+                            )
+                    })
                 )
                 .sort(
                     (a, b) =>
-                        new Date(a.date) -
-                        new Date(b.date)
+                        new Date(
+                            a.date
+                        ) -
+                        new Date(
+                            b.date
+                        )
                 );
 
+
         if (!history.length) {
+
             throw new Error(
                 "No existen registros válidos para mostrar."
             );
         }
 
+
         const rates =
             history.map(
-                item => Number(item.rate)
+                (item) =>
+                    item.rate
             );
+
 
         const first =
             rates[0];
 
+
         const latest =
-            rates[rates.length - 1];
+            rates[
+                rates.length - 1
+            ];
+
 
         const minimum =
-            Math.min(...rates);
+            Math.min(
+                ...rates
+            );
+
 
         const maximum =
-            Math.max(...rates);
+            Math.max(
+                ...rates
+            );
+
 
         const change =
             first === 0
                 ? 0
-                : ((latest - first) / first) * 100;
+                : (
+                    (
+                        latest -
+                        first
+                    ) /
+                    first
+                ) *
+                100;
+
+
+        const current =
+            history[
+                history.length - 1
+            ];
 
 
         /* ==============================
@@ -695,48 +987,73 @@ async function loadFX() {
            ============================== */
 
         fxValue.textContent =
-            formatExchangeRate(latest);
+            formatExchangeRate(
+                latest
+            );
+
 
         fxDate.textContent =
-            `Último registro: ${formatFXDate(history.at(-1).date)}`;
+            `Último registro: ${formatDate(
+                current.date,
+                {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric"
+                }
+            )}`;
+
 
         fxSource.textContent =
-            history.at(-1).source || "Banxico";
+            current.source ||
+            "Banxico";
 
 
         /* ==============================
-           MÍNIMO / MÁXIMO
+           MÍNIMO
            ============================== */
 
         fxMin.textContent =
-            formatExchangeRate(minimum);
+            formatExchangeRate(
+                minimum
+            );
+
+
+        /* ==============================
+           MÁXIMO
+           ============================== */
 
         fxMax.textContent =
-            formatExchangeRate(maximum);
+            formatExchangeRate(
+                maximum
+            );
 
 
         /* ==============================
            VARIACIÓN
            ============================== */
 
-        const changeSign =
-            change > 0
-                ? "+"
-                : "";
-
         fxChange.textContent =
-            `${changeSign}${change.toFixed(2)}%`;
+            `${
+                change > 0
+                    ? "+"
+                    : ""
+            }${change.toFixed(2)}%`;
+
 
         fxChange.classList.remove(
             "is-positive",
             "is-negative"
         );
 
+
         if (change > 0) {
+
             fxChange.classList.add(
                 "is-positive"
             );
+
         } else if (change < 0) {
+
             fxChange.classList.add(
                 "is-negative"
             );
@@ -750,20 +1067,21 @@ async function loadFX() {
         history.forEach(
             (item, index) => {
 
-                const bar =
+                fxChart.appendChild(
                     createFXBar(
                         item,
                         minimum,
                         maximum,
-                        index === history.length - 1
-                    );
-
-                fxChart.appendChild(bar);
+                        index ===
+                            history.length - 1
+                    )
+                );
             }
         );
 
 
-        updateFXStatus(
+        setStatus(
+            fxStatus,
             `${history.length} registros consultados.`,
             "is-success"
         );
@@ -775,6 +1093,7 @@ async function loadFX() {
             error
         );
 
+
         fxValue.textContent = "--";
         fxDate.textContent = "--";
         fxSource.textContent = "--";
@@ -782,13 +1101,31 @@ async function loadFX() {
         fxMax.textContent = "--";
         fxChange.textContent = "--";
 
-        fxChart.innerHTML = `
-            <div class="finanza-calendar-empty">
-                No fue posible consultar el histórico del tipo de cambio.
-            </div>
-        `;
 
-        updateFXStatus(
+        fxChart.innerHTML = "";
+
+
+        const errorMessage =
+            document.createElement(
+                "div"
+            );
+
+
+        errorMessage.className =
+            "finanza-calendar-empty";
+
+
+        errorMessage.textContent =
+            "No fue posible consultar el histórico del tipo de cambio.";
+
+
+        fxChart.appendChild(
+            errorMessage
+        );
+
+
+        setStatus(
+            fxStatus,
             "No fue posible consultar la información.",
             "is-error"
         );
@@ -797,7 +1134,8 @@ async function loadFX() {
 
         if (fxRefresh) {
 
-            fxRefresh.disabled = false;
+            fxRefresh.disabled =
+                false;
 
             fxRefresh.textContent =
                 "Actualizar información";
@@ -817,50 +1155,35 @@ if (fxRefresh) {
 
 loadFX();
 
+
 /* =========================================
    API — INPC
    ========================================= */
 
-const INPC_API_URL =
-    "https://hubfiscal.mx/api/v1/public/inpc?limit=1";
-
 const inpcStatus =
-    document.querySelector("#inpcStatus");
-
-const inpcValue =
-    document.querySelector("#inpcValue");
-
-const inpcPeriod =
-    document.querySelector("#inpcPeriod");
-
-const inpcSource =
-    document.querySelector("#inpcSource");
-
-const inpcRefresh =
-    document.querySelector("#inpcRefresh");
-
-
-function updateINPCStatus(
-    message,
-    state = ""
-) {
-
-    if (!inpcStatus) {
-        return;
-    }
-
-    inpcStatus.textContent = message;
-
-    inpcStatus.classList.remove(
-        "is-loading",
-        "is-success",
-        "is-error"
+    document.querySelector(
+        "#inpcStatus"
     );
 
-    if (state) {
-        inpcStatus.classList.add(state);
-    }
-}
+const inpcValue =
+    document.querySelector(
+        "#inpcValue"
+    );
+
+const inpcPeriod =
+    document.querySelector(
+        "#inpcPeriod"
+    );
+
+const inpcSource =
+    document.querySelector(
+        "#inpcSource"
+    );
+
+const inpcRefresh =
+    document.querySelector(
+        "#inpcRefresh"
+    );
 
 
 async function loadINPC() {
@@ -871,13 +1194,17 @@ async function loadINPC() {
         !inpcPeriod ||
         !inpcSource
     ) {
+
         return;
     }
 
-    updateINPCStatus(
+
+    setStatus(
+        inpcStatus,
         "Consultando información...",
         "is-loading"
     );
+
 
     if (inpcRefresh) {
 
@@ -887,10 +1214,14 @@ async function loadINPC() {
             "Actualizando información...";
     }
 
+
     try {
 
         const response =
-            await fetch(INPC_API_URL);
+            await fetch(
+                API.inpc
+            );
+
 
         if (!response.ok) {
 
@@ -899,39 +1230,49 @@ async function loadINPC() {
             );
         }
 
+
         const data =
             await response.json();
 
-        /*
-         * La API puede entregar un periodo
-         * como objeto o una serie como arreglo.
-         */
 
         const currentData =
             Array.isArray(data)
                 ? data[0]
                 : data;
 
+
         if (
             !currentData ||
-            currentData.value === undefined ||
+            !Number.isFinite(
+                Number(
+                    currentData.value
+                )
+            ) ||
             !currentData.period
         ) {
+
             throw new Error(
                 "La respuesta de la API no tiene el formato esperado."
             );
         }
 
+
         inpcValue.textContent =
-            Number(currentData.value).toFixed(2);
+            Number(
+                currentData.value
+            ).toFixed(2);
+
 
         inpcPeriod.textContent =
             `Periodo ${currentData.period}`;
 
+
         inpcSource.textContent =
             "INEGI";
 
-        updateINPCStatus(
+
+        setStatus(
+            inpcStatus,
             "Información actualizada correctamente.",
             "is-success"
         );
@@ -943,11 +1284,14 @@ async function loadINPC() {
             error
         );
 
+
         inpcValue.textContent = "--";
         inpcPeriod.textContent = "--";
         inpcSource.textContent = "--";
 
-        updateINPCStatus(
+
+        setStatus(
+            inpcStatus,
             "No fue posible consultar la información.",
             "is-error"
         );
@@ -956,7 +1300,8 @@ async function loadINPC() {
 
         if (inpcRefresh) {
 
-            inpcRefresh.disabled = false;
+            inpcRefresh.disabled =
+                false;
 
             inpcRefresh.textContent =
                 "Actualizar información";
@@ -976,127 +1321,206 @@ if (inpcRefresh) {
 
 loadINPC();
 
+
 /* =========================================
    API — CALENDARIO FISCAL
    ========================================= */
 
-const CALENDAR_API_URL =
-    "https://hubfiscal.mx/api/v1/public/calendario/proximos";
-
 const calendarStatus =
-    document.querySelector("#calendarStatus");
-
-const calendarList =
-    document.querySelector("#calendarList");
-
-const calendarRefresh =
-    document.querySelector("#calendarRefresh");
-
-
-function updateCalendarStatus(
-    message,
-    state = ""
-) {
-
-    if (!calendarStatus) {
-        return;
-    }
-
-    calendarStatus.textContent = message;
-
-    calendarStatus.classList.remove(
-        "is-loading",
-        "is-success",
-        "is-error"
+    document.querySelector(
+        "#calendarStatus"
     );
 
-    if (state) {
-        calendarStatus.classList.add(state);
-    }
-}
+const calendarList =
+    document.querySelector(
+        "#calendarList"
+    );
+
+const calendarRefresh =
+    document.querySelector(
+        "#calendarRefresh"
+    );
 
 
-function formatCalendarDate(dateString) {
+function createCalendarTextElement(
+    tagName,
+    className,
+    text
+) {
 
-    if (!dateString) {
-        return null;
-    }
+    const element =
+        document.createElement(
+            tagName
+        );
 
-    const date =
-        new Date(`${dateString}T00:00:00`);
 
-    if (Number.isNaN(date.getTime())) {
-        return null;
-    }
+    element.className =
+        className;
 
-    return {
-        day: date.toLocaleDateString(
-            "es-MX",
-            { day: "2-digit" }
-        ),
 
-        month: date.toLocaleDateString(
-            "es-MX",
-            { month: "short" }
-        )
-    };
+    element.textContent =
+        text;
+
+
+    return element;
 }
 
 
 function createCalendarEvent(event) {
 
-    const formattedDate =
-        formatCalendarDate(event.date);
-
     if (
-        !formattedDate ||
-        !event.title
+        !event?.date ||
+        !event?.title
     ) {
+
         return null;
     }
 
+
+    const day =
+        formatDate(
+            event.date,
+            {
+                day: "2-digit"
+            }
+        );
+
+
+    const month =
+        formatDate(
+            event.date,
+            {
+                month: "short"
+            }
+        );
+
+
+    if (
+        day === "--" ||
+        month === "--"
+    ) {
+
+        return null;
+    }
+
+
     const article =
-        document.createElement("article");
+        document.createElement(
+            "article"
+        );
+
 
     article.className =
         "finanza-calendar-event";
 
-    article.innerHTML = `
-        <div class="finanza-calendar-date">
 
-            <span class="finanza-calendar-date-day">
-                ${formattedDate.day}
-            </span>
+    /* ==============================
+       FECHA
+       ============================== */
 
-            <span class="finanza-calendar-date-month">
-                ${formattedDate.month}
-            </span>
+    const dateWrapper =
+        document.createElement(
+            "div"
+        );
 
-        </div>
 
-        <div class="finanza-calendar-event-content">
+    dateWrapper.className =
+        "finanza-calendar-date";
 
-            <span class="finanza-calendar-event-category">
-                ${event.category || "Calendario fiscal"}
-            </span>
 
-            <h4 class="finanza-calendar-event-title">
-                ${event.title}
-            </h4>
+    dateWrapper.appendChild(
+        createCalendarTextElement(
+            "span",
+            "finanza-calendar-date-day",
+            day
+        )
+    );
 
-            <p class="finanza-calendar-event-summary">
-                ${event.summary || "Consulta la información disponible para este vencimiento fiscal."}
-            </p>
 
-        </div>
+    dateWrapper.appendChild(
+        createCalendarTextElement(
+            "span",
+            "finanza-calendar-date-month",
+            month
+        )
+    );
 
-        <span
-            class="finanza-calendar-event-arrow"
-            aria-hidden="true"
-        >
-            →
-        </span>
-    `;
+
+    /* ==============================
+       CONTENIDO
+       ============================== */
+
+    const content =
+        document.createElement(
+            "div"
+        );
+
+
+    content.className =
+        "finanza-calendar-event-content";
+
+
+    content.appendChild(
+        createCalendarTextElement(
+            "span",
+            "finanza-calendar-event-category",
+            event.category ||
+                "Calendario fiscal"
+        )
+    );
+
+
+    content.appendChild(
+        createCalendarTextElement(
+            "h4",
+            "finanza-calendar-event-title",
+            event.title
+        )
+    );
+
+
+    content.appendChild(
+        createCalendarTextElement(
+            "p",
+            "finanza-calendar-event-summary",
+            event.summary ||
+                "Consulta la información disponible para este vencimiento fiscal."
+        )
+    );
+
+
+    /* ==============================
+       FLECHA
+       ============================== */
+
+    const arrow =
+        createCalendarTextElement(
+            "span",
+            "finanza-calendar-event-arrow",
+            "→"
+        );
+
+
+    arrow.setAttribute(
+        "aria-hidden",
+        "true"
+    );
+
+
+    article.appendChild(
+        dateWrapper
+    );
+
+
+    article.appendChild(
+        content
+    );
+
+
+    article.appendChild(
+        arrow
+    );
+
 
     return article;
 }
@@ -1108,28 +1532,38 @@ async function loadFiscalCalendar() {
         !calendarStatus ||
         !calendarList
     ) {
+
         return;
     }
 
-    updateCalendarStatus(
+
+    setStatus(
+        calendarStatus,
         "Consultando calendario fiscal...",
         "is-loading"
     );
 
+
     calendarList.innerHTML = "";
+
 
     if (calendarRefresh) {
 
-        calendarRefresh.disabled = true;
+        calendarRefresh.disabled =
+            true;
 
         calendarRefresh.textContent =
             "Actualizando calendario...";
     }
 
+
     try {
 
         const response =
-            await fetch(CALENDAR_API_URL);
+            await fetch(
+                API.fiscalCalendar
+            );
+
 
         if (!response.ok) {
 
@@ -1138,8 +1572,10 @@ async function loadFiscalCalendar() {
             );
         }
 
+
         const data =
             await response.json();
+
 
         if (!Array.isArray(data)) {
 
@@ -1148,21 +1584,26 @@ async function loadFiscalCalendar() {
             );
         }
 
-        const validEvents =
-            data
-                .map(createCalendarEvent)
-                .filter(Boolean);
 
-        if (!validEvents.length) {
+        const events =
+            data
+                .map(
+                    createCalendarEvent
+                )
+                .filter(
+                    Boolean
+                );
+
+
+        if (!events.length) {
 
             const emptyMessage =
-                document.createElement("div");
+                createCalendarTextElement(
+                    "div",
+                    "finanza-calendar-empty",
+                    "No hay próximos vencimientos disponibles."
+                );
 
-            emptyMessage.className =
-                "finanza-calendar-empty";
-
-            emptyMessage.textContent =
-                "No hay próximos vencimientos disponibles.";
 
             calendarList.appendChild(
                 emptyMessage
@@ -1170,15 +1611,20 @@ async function loadFiscalCalendar() {
 
         } else {
 
-            validEvents.forEach((eventElement) => {
-                calendarList.appendChild(
-                    eventElement
-                );
-            });
+            events.forEach(
+                (eventElement) => {
+
+                    calendarList.appendChild(
+                        eventElement
+                    );
+                }
+            );
         }
 
-        updateCalendarStatus(
-            `${validEvents.length} vencimientos encontrados.`,
+
+        setStatus(
+            calendarStatus,
+            `${events.length} vencimientos encontrados.`,
             "is-success"
         );
 
@@ -1189,20 +1635,25 @@ async function loadFiscalCalendar() {
             error
         );
 
+
         const errorMessage =
-            document.createElement("div");
+            createCalendarTextElement(
+                "div",
+                "finanza-calendar-empty",
+                "No fue posible consultar el calendario fiscal."
+            );
 
-        errorMessage.className =
-            "finanza-calendar-empty";
 
-        errorMessage.textContent =
-            "No fue posible consultar el calendario fiscal.";
+        calendarList.innerHTML = "";
+
 
         calendarList.appendChild(
             errorMessage
         );
 
-        updateCalendarStatus(
+
+        setStatus(
+            calendarStatus,
             "No fue posible consultar la información.",
             "is-error"
         );
@@ -1211,7 +1662,8 @@ async function loadFiscalCalendar() {
 
         if (calendarRefresh) {
 
-            calendarRefresh.disabled = false;
+            calendarRefresh.disabled =
+                false;
 
             calendarRefresh.textContent =
                 "Actualizar calendario";
@@ -1231,14 +1683,19 @@ if (calendarRefresh) {
 
 loadFiscalCalendar();
 
+
 /* =========================================
    AÑO DEL FOOTER
    ========================================= */
 
 const currentYear =
-    document.querySelector("#currentYear");
+    document.querySelector(
+        "#currentYear"
+    );
+
 
 if (currentYear) {
+
     currentYear.textContent =
         new Date().getFullYear();
 }

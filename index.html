@@ -3,11 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FINANZA | Consultoría Financiera</title>
 
     <meta
         name="description"
-        content="FINANZA es una consultoría financiera para personas, emprendedores y MiPyMEs."
+        content="FINANZA es una consultoría financiera para personas, emprendedores y MiPyMEs. Te ayudamos a comprender tus finanzas y tomar decisiones más claras y estratégicas."
     >
 
     <meta
@@ -15,6 +18,18 @@
         content="FINANZA Consultoría Financiera"
     >
 
+    <meta
+        name="robots"
+        content="index, follow"
+    >
+
+    <!-- Favicon FINANZA -->
+    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
         rel="preconnect"
@@ -27,16 +42,16 @@
         rel="stylesheet"
     >
 
-    <title>FINANZA | Consultoría Financiera</title>
-
+    <!-- Bootstrap -->
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
 
+    <!-- CSS FINANZA -->
     <link
         rel="stylesheet"
-        href="style.css"
+        href="css/style.css"
     >
 </head>
 
@@ -51,14 +66,16 @@
 
         <div class="container">
 
-            <a
-                class="navbar-brand finanza-brand"
-                href="#inicio"
-            >
-                FINANZA
-                <span>Consultoría Financiera</span>
-            </a>
-
+          <a
+    class="navbar-brand finanza-brand"
+    href="#inicio"
+>
+    <img
+        src="assets/icons/imagotipo-blanco.svg"
+        alt="FINANZA Consultoría Financiera"
+        class="finanza-logo"
+    >
+</a>
 
             <button
                 class="navbar-toggler"
@@ -1298,7 +1315,7 @@
                 <figure class="finanza-about-image">
 
                     <img
-                        src="images/Gemini_Generated_Image_ovlkepovlkepovlk.png"
+                        src="assets/images/finanza-about.webp"
                         alt="Análisis y planeación financiera"
                         loading="lazy"
                     >
@@ -2035,6 +2052,16 @@
                         novalidate
                     >
 
+                        <!-- Protección básica contra spam -->
+
+                        <input
+                            type="checkbox"
+                            name="botcheck"
+                            tabindex="-1"
+                            autocomplete="off"
+                            style="display: none;"
+                        >
+
 
                         <!-- NOMBRE -->
 
@@ -2199,7 +2226,10 @@
 
 
                         <p class="finanza-form-disclaimer">
-                            Tus datos serán utilizados únicamente para dar seguimiento a tu solicitud.
+                            Tus datos serán utilizados para atender tu solicitud y dar seguimiento a tu mensaje.
+                            Consulta nuestro
+                            <a href="aviso-privacidad.html">Aviso de Privacidad</a>
+                            para conocer cómo tratamos tus datos personales y cómo ejercer tus derechos ARCO.
                         </p>
 
                     </form>
@@ -2264,12 +2294,16 @@
             <div class="col-lg-5">
 
                 <a
-                    href="#inicio"
-                    class="finanza-footer-brand"
-                    aria-label="FINANZA - Ir al inicio"
-                >
-                    FINANZA
-                </a>
+    href="#inicio"
+    class="finanza-footer-brand"
+    aria-label="FINANZA - Ir al inicio"
+>
+    <img
+        src="assets/icons/imagotipo-blanco.svg"
+        alt="FINANZA"
+        class="finanza-footer-logo"
+    >
+</a>
 
 
                 <p class="finanza-footer-description">
@@ -2370,9 +2404,14 @@
             </p>
 
 
-            <a href="#">
-                Aviso de privacidad
-            </a>
+            <div class="d-flex flex-wrap gap-3">
+                <a href="aviso-privacidad.html">
+                    Aviso de Privacidad
+                </a>
+                <a href="terminos-uso.html">
+                    Términos de Uso
+                </a>
+            </div>
 
         </div>
 
@@ -2390,9 +2429,8 @@
 ></script>
 
 <script
-    src="script.js"
+    src="js/script.js"
 ></script>
 
 </body>
-
 </html>

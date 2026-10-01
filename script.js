@@ -323,6 +323,25 @@ if (contactForm) {
                 );
 
 
+                /*
+                 * Permite responder directamente al correo
+                 * proporcionado por la persona.
+                 */
+
+                const emailField =
+                    contactForm.querySelector("#email");
+
+                if (
+                    emailField &&
+                    emailField.value.trim()
+                ) {
+                    formData.set(
+                        "replyto",
+                        emailField.value.trim()
+                    );
+                }
+
+
                 const response =
                     await fetch(
                         WEB3FORMS.endpoint,
